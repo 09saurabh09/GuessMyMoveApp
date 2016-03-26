@@ -1,20 +1,24 @@
 <ion-view view-title="Select Game">
-  <ion-content class="padding">
-    <div class="list">
+    <ion-content class="padding">
+        <div class="list">
 
-      <a class="item item-thumbnail-left" ui-sref="tab.game">
-        <img src='img/guess.png'>
-        <h2>Guess My Move</h2>
-        <p>Try to move at opponent's guess</p>
-      </a>
+            <a class="item item-thumbnail-left" ng-click="setGameOption(1)">
+                <img src='img/guess.png'>
 
-      <a class="item item-thumbnail-left" href="#">
-        <img src='img/guess.png'>
-        <h2>Pretty Hate Machine</h2>
-        <p>Nine Inch Nails</p>
-      </a>
+                <h2>Guess My Move</h2>
 
-    </div>
+                <p>Try to move at opponent's guess</p>
+            </a>
 
-  </ion-content>
+            <a class="item item-thumbnail-left" ng-click="setGameOption(2)">
+                <img src='img/guess.png'>
+
+                <h2>Wait for new game</h2>
+
+                <p>This will be awesome</p>
+            </a>
+
+        </div>
+
+    </ion-content>
 </ion-view>

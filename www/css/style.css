@@ -10,3 +10,7 @@
 .game {
   margin: 0 auto; /* or margin: 0 auto 0 auto */
 }
+
+.game td{
+    vertical-align: middle;
+}

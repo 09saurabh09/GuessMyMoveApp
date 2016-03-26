@@ -1,17 +1,29 @@
 <ion-view hide-nav-bar="true">
-  <ion-content class="padding">
-    <div class="list list-inset">
-      <label class="item item-input">
-        <i class="icon ion-search placeholder-icon"></i>
-        <input type="text" placeholder="Enter your friend's game id to join">
-      </label>
-    </div>
+    <ion-content class="padding">
+        <div class="list list-inset">
+            <label class="item item-input">
+                <i class="icon ion-search placeholder-icon"></i>
+                <input type="text" placeholder="Enter your friend's game id to join" ng-model="id.friendGameId" ng-change="joinGame()">
+            </label>
+        </div>
+        <div class="row">
+            <div class="col text-left">
+                <label for="gameId">GameId:{{gameId}}</label>
+                <!--<button id="gameInvite" type="button" class="btn btn-default"></button>-->
+                <div id="gameId" style="display: inline"></div>
+            </div>
+            <div class="col text-right">
+            <div id="scoreDiv" style="display: inline">
+                <label>Scores:</label>
 
-    <div class="row">
-      <div class="col text-center">
-        <table id = 'game' class ='game'>
-        </table>
-      </div>
-    </div>
-  </ion-content>
+                <div id="myScore" style="display: inline; color:green"> {{myScore}}</div>
+                <div id="opponentScore" style="display: inline; color:red"> {{opponentScore}}</div>
+            </div>
+            </div>
+        </div>
+        <div class ="row">
+            <table id='game' class='game'>
+            </table>
+        </div>
+    </ion-content>
 </ion-view>

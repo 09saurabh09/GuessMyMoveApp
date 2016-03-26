@@ -5,7 +5,7 @@
 // the 2nd parameter is an array of 'requires'
 // 'starter.services' is found in services.js
 // 'starter.controllers' is found in controllers.js
-angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
+angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', 'ngCordova'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -24,7 +24,7 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
 })
 
 .constant('ConfigConstant', {
-  server: 'http://nodeone-saurabh0909.c9.io'
+  server: 'http://guessmymove.herokuapp.com'
 })
 
 .config(function($stateProvider, $urlRouterProvider, ConfigConstant) {
@@ -43,12 +43,6 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
   })
 
   // Each tab has its own nav history stack:
-
-  //.state('tab.game', {
-  //  url: '/game',
-  //  abstract:true,
-  //  templateUrl: 'templates/tab-game.html'
-  //})
 
   .state('tab.game', {
     url: '/game',
