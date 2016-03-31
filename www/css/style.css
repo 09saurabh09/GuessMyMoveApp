@@ -7,10 +7,25 @@
   text-align: center;
 }
 
-.game {
-  margin: 0 auto; /* or margin: 0 auto 0 auto */
+.centre {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    text-align: center;
 }
 
 .game td{
     vertical-align: middle;
+}
+
+.img-circle {
+    background-repeat: no-repeat;
+    background-position: 50%;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+}
+
+div.col:focus {
+    background-color:red;
 }

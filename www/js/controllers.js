@@ -1,11 +1,17 @@
 angular.module('starter.controllers', [])
 
-    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup) {
+    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal) {
         var board = jsboard.board({attach: "game", size: "6x6", style: "checkerboard"});
         var x = jsboard.piece({text: "X", fontSize: "30px", textAlign: "center"});
         var o = jsboard.piece({text: "O", fontSize: "30px", textAlign: "center"});
         var guessPiece = jsboard.piece({text: "?", fontSize: "20px", textAlign: "center"});
         var gameStarted, playerOne, nTurnInGame, turn, guess, turnCount, beginning, points, playingGameId;
+        $scope.friends = [];
+        $scope.graphAPIHost = ConfigConstant.graphAPIHost;
+        $scope.temp = [];
+        $scope.friendSocialId = null;
+        $scope.friendSocialName = null;
+
         function init() {
             $scope.gameId = Math.random().toString(36).substring(2, 2 + $rootScope.gameIdLength).toLowerCase();
             gameStarted = false;
@@ -15,7 +21,6 @@ angular.module('starter.controllers', [])
             guess = true;
             turnCount = 0;
             beginning = true;
-            points;
             playingGameId = $scope.gameId;
 
             $scope.myScore = 0;
@@ -23,7 +28,7 @@ angular.module('starter.controllers', [])
             $scope.id = {};
             board.cell("each").rid();
             // Register the game
-            socket.emit('newGame', { id: $scope.gameId });
+            socket.emit('newGame', {id: $scope.gameId});
         }
 
         init();
@@ -35,12 +40,45 @@ angular.module('starter.controllers', [])
             }
         });
 
+        $ionicModal.fromTemplateUrl('templates/friendInvite.html', {
+            scope: $scope,
+            animation: 'slide-in-up'
+        }).then(function (modal) {
+            $scope.modal = modal;
+        });
+
+        $scope.challengeFriends = function () {
+            $http({
+                method: 'GET',
+                url: ConfigConstant.graphAPIHost + '/me/friends?access_token=' + $rootScope.fbToken
+            }).then(function successCallback(response) {
+                var friendResponse = response.data;
+                if (friendResponse.data) {
+                    $scope.friends = friendResponse.data;
+                    $scope.modal.show();
+                }
+
+            }, function errorCallback(response) {
+                alert('error');
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+            });
+            //$scope.modal.show();
+            //$scope.modal.hide();
+        };
+
+        $scope.inviteFriend = function (friendSocial) {
+            $scope.friendSocialId = friendSocial.id;
+            $scope.friendSocialName = friendSocial.name;
+            $scope.modal.hide();
+            alert($scope.friendSocialId);
+        };
 
         if ($rootScope.gameOption == 1) {
             //$cordovaToast.showShortBottom('Connected');
             var myPiece, opponentPiece, myGuess, opponentGuess;
-            board.cell("each").on("click", function() {
-                if (board.cell(this).get()===null) {
+            board.cell("each").on("click", function () {
+                if (board.cell(this).get() === null) {
 
                     if (gameStarted) {
                         // Emit a event for this turn
@@ -57,7 +95,7 @@ angular.module('starter.controllers', [])
                                 board.cell(this).place(myPiece.clone());
                                 board.cell(opponentGuess).place(guessPiece.clone());
                                 points = computePoints(myGuess, opponentGuess);
-                                $cordovaToast.showShortBottom(points+ " points to you, now make your guess");
+                                $cordovaToast.showShortBottom(points + " points to you, now make your guess");
                                 $scope.myScore = $scope.myScore + points;
                                 $scope.$apply();
                                 turn = !turn;
@@ -87,12 +125,12 @@ angular.module('starter.controllers', [])
                 }
             });
 
-            socket.on('opponentTurn', function(opponentTurn) {
+            socket.on('opponentTurn', function (opponentTurn) {
                 board.cell(opponentTurn.location).place(opponentPiece.clone());
 
                 //Update opponent's score
                 points = computePoints(myGuess, opponentTurn.location);
-                $cordovaToast.showShortBottom(points+ " points to your opponent");
+                $cordovaToast.showShortBottom(points + " points to your opponent");
                 $scope.opponentScore = $scope.opponentScore + points;
 
                 if (opponentTurn.gameOver) {
@@ -101,7 +139,7 @@ angular.module('starter.controllers', [])
 
             });
 
-            socket.on('takeTurn', function(oppGuess) {
+            socket.on('takeTurn', function (oppGuess) {
                 turn = true;
                 guess = true;
                 beginning = false;
@@ -111,7 +149,10 @@ angular.module('starter.controllers', [])
 
             $scope.joinGame = function () {
                 if ($scope.id.friendGameId.length == $rootScope.gameIdLength) {
-                    var data = { ownGameId: $scope.gameId.toLowerCase(), requestGameId:$scope.id.friendGameId.toLowerCase()};
+                    var data = {
+                        ownGameId: $scope.gameId.toLowerCase(),
+                        requestGameId: $scope.id.friendGameId.toLowerCase()
+                    };
                     $http({
                         method: 'POST',
                         data: data,
@@ -122,7 +163,7 @@ angular.module('starter.controllers', [])
                         playingGameId = $scope.id.friendGameId.toLowerCase();
                         gameStarted = true;
                         playerOne = false;
-                        socket.emit('newGameJoined', { gameId: playingGameId});
+                        socket.emit('newGameJoined', {gameId: playingGameId});
                         $cordovaToast.showShortBottom("Opponent turn, wait for guess");
                     }, function errorCallback(response) {
                         // called asynchronously if an error occurs
@@ -132,13 +173,13 @@ angular.module('starter.controllers', [])
 
             };
 
-            function computePoints(a,b) {
-                return 10 -  (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]));
+            function computePoints(a, b) {
+                return 10 - (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]));
             }
 
             function declareWinner() {
                 var message = '';
-                if($scope.myScore > $scope.opponentScore) {
+                if ($scope.myScore > $scope.opponentScore) {
                     message = 'Congratulations!!! You have won the match\n';
                 } else if ($scope.myScore < $scope.opponentScore) {
                     message = 'You Lost!!! Better luck next time\n';
@@ -149,15 +190,15 @@ angular.module('starter.controllers', [])
                 message = message + '\nOpponent Score: ' + $scope.opponentScore;
 
                 // An alert dialog
-                var showAlert = function() {
+                var showAlert = function () {
                     var alertPopup = $ionicPopup.alert({
                         title: 'Game Over',
                         template: message
                     });
-                alertPopup.then(function(res) {
-                    //New game will be created after this
-                    init();
-                });
+                    alertPopup.then(function (res) {
+                        //New game will be created after this
+                        init();
+                    });
 
                 };
 
@@ -205,6 +246,7 @@ angular.module('starter.controllers', [])
 
     .controller('LoginCtrl', function ($scope, $http, configObj, ConfigConstant, Service, $state, $rootScope) {
         if (configObj.data.loggedIn) {
+            $rootScope.fbToken = configObj.data.fbToken;
             $state.go('gameOptions');
         }
         $scope.fbLogin = function () {
@@ -224,6 +266,7 @@ angular.module('starter.controllers', [])
                         Service.isLoggedIn().then(function (configDetails) {
                             if (configDetails.loggedIn) {
                                 $rootScope.gameIdLength = 5; // Will be updated by config call
+                                $rootScope.fbToken = configDetails.fbToken;
                                 $state.go('gameOptions');
                             }
 

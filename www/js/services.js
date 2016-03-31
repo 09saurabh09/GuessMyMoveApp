@@ -62,7 +62,6 @@ angular.module('starter.services', [])
         var socket = io.connect(ConfigConstant.server);
         socket.on('connect', function () {
             socket.emit('registerUser');
-            alert('connected');
         });
         socket.on('disconnect', function () {
             alert('connected');
