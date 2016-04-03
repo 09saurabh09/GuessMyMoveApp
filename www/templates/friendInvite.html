@@ -4,24 +4,24 @@
     </ion-header-bar>
     <ion-content>
 
-        <div ng-repeat="friend in friends">
+        <div ng-repeat="friend in onlineFriends">
             <div ng-if="$index%4==0" class="row">
-                <div class="col" ng-click="inviteFriend(friends[$index])" ng-if="$index<friends.length">
-                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+friends[$index].id+'/picture?type=normal'}}">
-                    <h6 class="centre">{{friends[$index].name}}</h6>
+                <div class="col" ng-click="inviteFriend(onlineFriends[$index])" ng-if="$index<onlineFriends.length">
+                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+onlineFriends[$index].facebook.id+'/picture?type=normal'}}">
+                    <h6 class="centre">{{onlineFriends[$index].local.firstName}}</h6>
                     <!--<button id={{$index}} class="button button-dark" >{{btnNames[$index]}}</button>-->
                 </div>
-                <div class="col" ng-click="inviteFriend(friends[$index+1])" ng-if="$index+1<friends.length">
-                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+friends[$index+1].id+'/picture?type=normal'}}">
-                    <h6 class="centre">{{friends[$index+1].name}}</h6>
+                <div class="col" ng-click="inviteFriend(onlineFriends[$index+1])" ng-if="$index+1<onlineFriends.length">
+                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+onlineFriends[$index+1].facebook.id+'/picture?type=normal'}}">
+                    <h6 class="centre">{{onlineFriends[$index+1].local.firstName}}</h6>
                 </div>
-                <div class="col" ng-click="inviteFriend(friends[$index+2])" ng-if="$index+2<friends.length">
-                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+friends[$index+2].id+'/picture?type=normal'}}">
-                    <h6 class="centre">{{friends[$index+2].name}}</h6>
+                <div class="col" ng-click="inviteFriend(onlineFriends[$index+2])" ng-if="$index+2<onlineFriends.length">
+                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+onlineFriends[$index+2].facebook.id+'/picture?type=normal'}}">
+                    <h6 class="centre">{{onlineFriends[$index+2].local.firstName}}</h6>
                 </div>
-                <div class="col" ng-click="inviteFriend(friends[$index+3])" ng-if="$index+3<friends.length">
-                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+friends[$index+3].id+'/picture?type=normal'}}">
-                    <h6 class="centre">{{friends[$index+3].name}}</h6>
+                <div class="col" ng-click="inviteFriend(onlineFriends[$index+3])" ng-if="$index+3<onlineFriends.length">
+                    <img class="img-circle centre" ng-src="{{graphAPIHost+'/'+onlineFriends[$index+3].facebook.id+'/picture?type=normal'}}">
+                    <h6 class="centre">{{onlineFriends[$index+3].local.firstName}}</h6>
                 </div>
             </div>
         </div>

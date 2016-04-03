@@ -24,9 +24,13 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
     })
 
     .constant('ConfigConstant', {
-        //server: 'http://guessmymove.herokuapp.com',
-        server: 'http://localhost:8000',
-        graphAPIHost: 'https://graph.facebook.com'
+        server: 'http://guessmymove.herokuapp.com',
+        //server: 'http://localhost:8000',
+        graphAPIHost: 'https://graph.facebook.com',
+        gameType: {
+            1: 'Guess My Move',
+            2: 'TicTacToe'
+        }
 
     })
 

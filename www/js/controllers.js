@@ -1,15 +1,17 @@
 angular.module('starter.controllers', [])
 
-    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal) {
+    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal, GameService) {
         var board = jsboard.board({attach: "game", size: "6x6", style: "checkerboard"});
         var x = jsboard.piece({text: "X", fontSize: "30px", textAlign: "center"});
         var o = jsboard.piece({text: "O", fontSize: "30px", textAlign: "center"});
         var guessPiece = jsboard.piece({text: "?", fontSize: "20px", textAlign: "center"});
         var gameStarted, playerOne, nTurnInGame, turn, guess, turnCount, beginning, points, playingGameId;
-        $scope.friends = [];
+        $scope.facebookFriends = null;
+        $scope.onlineFriends = null;
+        $scope.offlineFriends = null;
         $scope.graphAPIHost = ConfigConstant.graphAPIHost;
         $scope.temp = [];
-        $scope.friendSocialId = null;
+        $scope.friendObjectId = null;
         $scope.friendSocialName = null;
 
         function init() {
@@ -48,14 +50,32 @@ angular.module('starter.controllers', [])
         });
 
         $scope.challengeFriends = function () {
+            // Get a list of friends from facebook
             $http({
                 method: 'GET',
                 url: ConfigConstant.graphAPIHost + '/me/friends?access_token=' + $rootScope.fbToken
             }).then(function successCallback(response) {
                 var friendResponse = response.data;
                 if (friendResponse.data) {
-                    $scope.friends = friendResponse.data;
-                    $scope.modal.show();
+                    $scope.facebookFriends = friendResponse.data;
+                    showFriendList();
+                }
+
+            }, function errorCallback(response) {
+                alert('error');
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+            });
+
+            // Get a list of online friends from local server
+            $http({
+                method: 'GET',
+                url: ConfigConstant.server + '/api/users/getOnlineFriendsList'
+            }).then(function successCallback(response) {
+                var friendResponse = response.data;
+                if (friendResponse.data) {
+                    $scope.onlineFriends = friendResponse.data;
+                    showFriendList();
                 }
 
             }, function errorCallback(response) {
@@ -68,10 +88,26 @@ angular.module('starter.controllers', [])
         };
 
         $scope.inviteFriend = function (friendSocial) {
-            $scope.friendSocialId = friendSocial.id;
-            $scope.friendSocialName = friendSocial.name;
+            $scope.friendObjectId = friendSocial._id;
+            var data = {
+                ownGameId: $scope.gameId.toLowerCase(),
+                myObjectId: $rootScope.userId,
+                opponentObjectId: $scope.friendObjectId,
+                name: $rootScope.user.firstName,
+                gameType: $rootScope.gameOption
+            };
+
+            GameService.gameInvite(data, function () {
+                // Inform other player about success
+                board.cell("each").rid();
+                playingGameId = $scope.gameId.toLowerCase();
+                gameStarted = true;
+                playerOne = true;
+            }, function () {
+                alert('Unable to invite');
+            });
+
             $scope.modal.hide();
-            alert($scope.friendSocialId);
         };
 
         if ($rootScope.gameOption == 1) {
@@ -147,17 +183,44 @@ angular.module('starter.controllers', [])
                 $cordovaToast.showShortBottom("Your turn, make your move close to opponent guess");
             });
 
+            socket.on('gameInvite', function (gameInvite) {
+                var confirmPopup = $ionicPopup.confirm({
+                    title: 'Game Invite',
+                    template: 'Your friend ' + gameInvite.name + ' has invited you to play ' + ConfigConstant.gameType[gameInvite.gameType] +
+                    ' Do you want to play ?',
+                    okText: 'Accepted'
+                });
+
+                confirmPopup.then(function (res) {
+                    if (res) {
+                        var data = {
+                            ownGameId: $scope.gameId.toLowerCase(),
+                            requestGameId: gameInvite.gameId
+                        };
+
+                        GameService.joinGame(data, function () {
+                            // Inform other player about success
+                            board.cell("each").rid();
+                            playingGameId = gameInvite.gameId;
+                            gameStarted = true;
+                            playerOne = false;
+                            socket.emit('newGameJoined', {gameId: playingGameId});
+                            $cordovaToast.showShortBottom("Opponent turn, wait for guess");
+                        }, function () {
+
+                        });
+                    } else {
+                    }
+                });
+            });
+
             $scope.joinGame = function () {
                 if ($scope.id.friendGameId.length == $rootScope.gameIdLength) {
                     var data = {
                         ownGameId: $scope.gameId.toLowerCase(),
                         requestGameId: $scope.id.friendGameId.toLowerCase()
                     };
-                    $http({
-                        method: 'POST',
-                        data: data,
-                        url: ConfigConstant.server + '/api/game/gameRequest'
-                    }).then(function successCallback(response) {
+                    GameService.joinGame(data, function () {
                         // Inform other player about success
                         board.cell("each").rid();
                         playingGameId = $scope.id.friendGameId.toLowerCase();
@@ -165,13 +228,18 @@ angular.module('starter.controllers', [])
                         playerOne = false;
                         socket.emit('newGameJoined', {gameId: playingGameId});
                         $cordovaToast.showShortBottom("Opponent turn, wait for guess");
-                    }, function errorCallback(response) {
-                        // called asynchronously if an error occurs
-                        // or server returns response with an error status.
+                    }, function () {
+
                     });
                 }
 
             };
+
+            function showFriendList() {
+                if ($scope.facebookFriends && $scope.onlineFriends) {
+                    $scope.modal.show();
+                }
+            }
 
             function computePoints(a, b) {
                 return 10 - (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]));
@@ -247,6 +315,9 @@ angular.module('starter.controllers', [])
     .controller('LoginCtrl', function ($scope, $http, configObj, ConfigConstant, Service, $state, $rootScope) {
         if (configObj.data.loggedIn) {
             $rootScope.fbToken = configObj.data.fbToken;
+            $rootScope.user = configObj.data.user;
+            $rootScope.userId = configObj.data.userId;
+            $rootScope.gameIdLength = 5; // Will be updated by config call
             $state.go('gameOptions');
         }
         $scope.fbLogin = function () {
@@ -267,7 +338,11 @@ angular.module('starter.controllers', [])
                             if (configDetails.loggedIn) {
                                 $rootScope.gameIdLength = 5; // Will be updated by config call
                                 $rootScope.fbToken = configDetails.fbToken;
+                                $rootScope.user = configDetails.user;
+                                $rootScope.userId = configDetails.userId;
                                 $state.go('gameOptions');
+                            } else {
+                                alert("Something went wrong, Please try again");
                             }
 
                         });

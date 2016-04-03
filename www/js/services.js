@@ -87,4 +87,42 @@ angular.module('starter.services', [])
                 })
             }
         };
-    });
+    })
+
+    .factory('GameService', function (ConfigConstant, $http) {
+
+        var gameInvite = function (data, success, failure) {
+            $http({
+                method: 'POST',
+                data: data,
+                url: ConfigConstant.server + '/api/game/gameInvite'
+            }).then(function successCallback(response) {
+                // Inform other player about success
+                success();
+            }, function errorCallback(response) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                failure();
+            });
+        };
+
+        var joinGame = function (data, success, failure) {
+            $http({
+                method: 'POST',
+                data: data,
+                url: ConfigConstant.server + '/api/game/gameRequest'
+            }).then(function successCallback(response) {
+                success();
+            }, function errorCallback(response) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                failure();
+            });
+        };
+        return {
+            gameInvite: gameInvite,
+            joinGame: joinGame
+        }
+    }
+
+);
