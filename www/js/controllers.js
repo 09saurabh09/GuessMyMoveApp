@@ -1,6 +1,6 @@
 angular.module('starter.controllers', [])
 
-    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal, GameService) {
+    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal, GameService, $state) {
         var board = jsboard.board({attach: "game", size: "6x6", style: "checkerboard"});
         var x = jsboard.piece({text: "X", fontSize: "30px", textAlign: "center"});
         var o = jsboard.piece({text: "O", fontSize: "30px", textAlign: "center"});
@@ -114,11 +114,13 @@ angular.module('starter.controllers', [])
                 title: 'Game Invite',
                 template: 'Your friend ' + gameInvite.name + ' has invited you to play ' + ConfigConstant.gameType[gameInvite.gameType] +
                 ' Do you want to play ?',
-                okText: 'Accepted'
+                okText: 'Accept'
             });
 
             confirmPopup.then(function (res) {
                 if (res) {
+                    $state.go('tab.game');
+                    $scope.modal.hide();
                     var data = {
                         ownGameId: $scope.gameId.toLowerCase(),
                         requestGameId: gameInvite.gameId
