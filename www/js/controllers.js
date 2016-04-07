@@ -101,13 +101,70 @@ angular.module('starter.controllers', [])
                 // Inform other player about success
                 board.cell("each").rid();
                 playingGameId = $scope.gameId.toLowerCase();
-                gameStarted = true;
                 playerOne = true;
             }, function () {
                 alert('Unable to invite');
             });
 
             $scope.modal.hide();
+        };
+
+        socket.on('gameInvite', function (gameInvite) {
+            var confirmPopup = $ionicPopup.confirm({
+                title: 'Game Invite',
+                template: 'Your friend ' + gameInvite.name + ' has invited you to play ' + ConfigConstant.gameType[gameInvite.gameType] +
+                ' Do you want to play ?',
+                okText: 'Accepted'
+            });
+
+            confirmPopup.then(function (res) {
+                if (res) {
+                    var data = {
+                        ownGameId: $scope.gameId.toLowerCase(),
+                        requestGameId: gameInvite.gameId
+                    };
+
+                    GameService.joinGame(data, function () {
+                        // Inform other player about success
+                        board.cell("each").rid();
+                        playingGameId = gameInvite.gameId;
+                        gameStarted = true;
+                        playerOne = false;
+                        socket.emit('newGameJoined', {gameId: playingGameId});
+                        $cordovaToast.showShortBottom("Opponent turn, wait for guess");
+                    }, function () {
+
+                    });
+                } else {
+                }
+            });
+        });
+
+        function showFriendList() {
+            if ($scope.facebookFriends && $scope.onlineFriends) {
+                $scope.modal.show();
+            }
+        }
+
+        $scope.joinGame = function () {
+            if ($scope.id.friendGameId.length == $rootScope.gameIdLength) {
+                var data = {
+                    ownGameId: $scope.gameId.toLowerCase(),
+                    requestGameId: $scope.id.friendGameId.toLowerCase()
+                };
+                GameService.joinGame(data, function () {
+                    // Inform other player about success
+                    board.cell("each").rid();
+                    playingGameId = $scope.id.friendGameId.toLowerCase();
+                    gameStarted = true;
+                    playerOne = false;
+                    socket.emit('newGameJoined', {gameId: playingGameId});
+                    $cordovaToast.showShortBottom("Opponent turn, wait for guess");
+                }, function () {
+
+                });
+            }
+
         };
 
         if ($rootScope.gameOption == 1) {
@@ -183,64 +240,6 @@ angular.module('starter.controllers', [])
                 $cordovaToast.showShortBottom("Your turn, make your move close to opponent guess");
             });
 
-            socket.on('gameInvite', function (gameInvite) {
-                var confirmPopup = $ionicPopup.confirm({
-                    title: 'Game Invite',
-                    template: 'Your friend ' + gameInvite.name + ' has invited you to play ' + ConfigConstant.gameType[gameInvite.gameType] +
-                    ' Do you want to play ?',
-                    okText: 'Accepted'
-                });
-
-                confirmPopup.then(function (res) {
-                    if (res) {
-                        var data = {
-                            ownGameId: $scope.gameId.toLowerCase(),
-                            requestGameId: gameInvite.gameId
-                        };
-
-                        GameService.joinGame(data, function () {
-                            // Inform other player about success
-                            board.cell("each").rid();
-                            playingGameId = gameInvite.gameId;
-                            gameStarted = true;
-                            playerOne = false;
-                            socket.emit('newGameJoined', {gameId: playingGameId});
-                            $cordovaToast.showShortBottom("Opponent turn, wait for guess");
-                        }, function () {
-
-                        });
-                    } else {
-                    }
-                });
-            });
-
-            $scope.joinGame = function () {
-                if ($scope.id.friendGameId.length == $rootScope.gameIdLength) {
-                    var data = {
-                        ownGameId: $scope.gameId.toLowerCase(),
-                        requestGameId: $scope.id.friendGameId.toLowerCase()
-                    };
-                    GameService.joinGame(data, function () {
-                        // Inform other player about success
-                        board.cell("each").rid();
-                        playingGameId = $scope.id.friendGameId.toLowerCase();
-                        gameStarted = true;
-                        playerOne = false;
-                        socket.emit('newGameJoined', {gameId: playingGameId});
-                        $cordovaToast.showShortBottom("Opponent turn, wait for guess");
-                    }, function () {
-
-                    });
-                }
-
-            };
-
-            function showFriendList() {
-                if ($scope.facebookFriends && $scope.onlineFriends) {
-                    $scope.modal.show();
-                }
-            }
-
             function computePoints(a, b) {
                 return 10 - (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]));
             }
@@ -312,7 +311,7 @@ angular.module('starter.controllers', [])
         $scope.chat = Chats.get($stateParams.chatId);
     })
 
-    .controller('LoginCtrl', function ($scope, $http, configObj, ConfigConstant, Service, $state, $rootScope) {
+    .controller('LoginCtrl', function ($scope, $http, configObj, ConfigConstant, Service, $state, $rootScope, $ionicLoading) {
         if (configObj.data.loggedIn) {
             $rootScope.fbToken = configObj.data.fbToken;
             $rootScope.user = configObj.data.user;
@@ -334,38 +333,29 @@ angular.module('starter.controllers', [])
                     //clearTimeout(defaultTimer);
                     setTimeout(function () {
                         loginWindow.close();
-                        Service.isLoggedIn().then(function (configDetails) {
-                            if (configDetails.loggedIn) {
-                                $rootScope.gameIdLength = 5; // Will be updated by config call
-                                $rootScope.fbToken = configDetails.fbToken;
-                                $rootScope.user = configDetails.user;
-                                $rootScope.userId = configDetails.userId;
-                                $state.go('gameOptions');
-                            } else {
-                                alert("Something went wrong, Please try again");
-                            }
-
+                        $ionicLoading.show({
+                            template: 'Logging you in...'
                         });
+                        setTimeout(function () {
+                            Service.isLoggedIn().then(function (configDetails) {
+                                if (configDetails.loggedIn) {
+                                    $rootScope.gameIdLength = 5; // Will be updated by config call
+                                    $rootScope.fbToken = configDetails.fbToken;
+                                    $rootScope.user = configDetails.user;
+                                    $rootScope.userId = configDetails.userId;
+                                    $ionicLoading.hide();
+                                    $state.go('gameOptions');
+                                } else {
+                                    alert("Something went wrong, Please try again");
+                                }
+
+                            });
+                            }, 2000);
                     }, 1000);
                 }
             }
         };
 
-        $scope.loggedIn = function () {
-            $http({
-                method: 'GET',
-                url: ConfigConstant.server + '/api/users/configCall'
-            }).then(function successCallback(response) {
-                //window.location.href = 'http://www.facebook.com';
-                //$state.go('tab.dash');
-                // this callback will be called asynchronously
-                // when the response is available
-            }, function errorCallback(response) {
-                alert('failure');
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-            });
-        }
     })
 
     .controller('GameOptionsCtrl', function ($scope, $ionicNavBarDelegate, $rootScope, $state) {
