@@ -1,5 +1,10 @@
-<ion-view hide-nav-bar="true">
-    <ion-content class="padding">
+<ion-view view-title={{currentGame}}>
+    <ion-nav-buttons side="right">
+        <button class="button" ng-click="showIconHelp($event)">
+                {{user.firstName}} <i ng-class="isOnline ? 'icon ion-ios-football green-icon' : 'icon ion-ios-football grey-icon'"></i>
+        </button>
+    </ion-nav-buttons>
+    <ion-content>
         <div class="list list-inset">
             <label class="item item-input">
                 <i class="icon ion-search placeholder-icon"></i>
@@ -12,13 +17,20 @@
                 <!--<button id="gameInvite" type="button" class="btn btn-default"></button>-->
                 <div id="gameId" style="display: inline"></div>
             </div>
-            <div class="col text-right">
-            <div id="scoreDiv" style="display: inline">
-                <label>Scores:</label>
+            <div class ="col centre" ng-click="showIconHelp($event)">
 
-                <div id="myScore" style="display: inline; color:green"> {{myScore}}</div>
-                <div id="opponentScore" style="display: inline; color:red"> {{opponentScore}}</div>
+                <i ng-class="myTurn ? 'icon ion-android-walk green-icon' : 'icon ion-android-walk grey-icon'"></i>
+                <i ng-class="myGuess ? 'icon ion-android-bulb green-icon' : 'icon ion-android-bulb grey-icon'"></i>
+                <i ng-class="!(myTurn || myGuess) ? 'icon ion-android-hand green-icon' : 'icon ion-android-hand grey-icon'"></i>
+
             </div>
+            <div class="col text-right">
+                <div id="scoreDiv" style="display: inline">
+                    <label>Scores:</label>
+
+                    <div id="myScore" style="display: inline; color:green"> {{myScore}}</div>
+                    <div id="opponentScore" style="display: inline; color:red"> {{opponentScore}}</div>
+                </div>
             </div>
         </div>
         <div class ="row">

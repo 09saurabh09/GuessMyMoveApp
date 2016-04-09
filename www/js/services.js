@@ -61,10 +61,13 @@ angular.module('starter.services', [])
     .factory('socket', function ($rootScope, ConfigConstant) {
         var socket = io.connect(ConfigConstant.server);
         socket.on('connect', function () {
+            $rootScope.isOnline= true;
             socket.emit('registerUser');
+            $rootScope.$apply();
         });
         socket.on('disconnect', function () {
-            alert('connected');
+            $rootScope.isOnline= false;
+            $rootScope.$apply();
         });
 
         return {

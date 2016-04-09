@@ -1,11 +1,12 @@
 angular.module('starter.controllers', [])
 
-    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup, $ionicModal, GameService, $state) {
+    .controller('GameCtrl', function ($scope, $rootScope, socket, $cordovaToast, ConfigConstant, $http, $ionicPopup,
+                                      $ionicModal, GameService, $state, $ionicPopover) {
         var board = jsboard.board({attach: "game", size: "6x6", style: "checkerboard"});
         var x = jsboard.piece({text: "X", fontSize: "30px", textAlign: "center"});
         var o = jsboard.piece({text: "O", fontSize: "30px", textAlign: "center"});
         var guessPiece = jsboard.piece({text: "?", fontSize: "20px", textAlign: "center"});
-        var gameStarted, playerOne, nTurnInGame, turn, guess, turnCount, beginning, points, playingGameId;
+        var playerOne, nTurnInGame, turnCount, beginning, points, playingGameId;
         $scope.facebookFriends = null;
         $scope.onlineFriends = null;
         $scope.offlineFriends = null;
@@ -13,14 +14,17 @@ angular.module('starter.controllers', [])
         $scope.temp = [];
         $scope.friendObjectId = null;
         $scope.friendSocialName = null;
+        $scope.localOnline = $rootScope.isOnline;
+        $scope.myTurn = false;
+        $scope.myGuess = false;
 
         function init() {
             $scope.gameId = Math.random().toString(36).substring(2, 2 + $rootScope.gameIdLength).toLowerCase();
-            gameStarted = false;
+            $scope.gameStarted = false;
             playerOne = true;
             nTurnInGame = 5;
-            turn = true;
-            guess = true;
+            $scope.turn = true;
+            $scope.guess = true;
             turnCount = 0;
             beginning = true;
             playingGameId = $scope.gameId;
@@ -31,13 +35,16 @@ angular.module('starter.controllers', [])
             board.cell("each").rid();
             // Register the game
             socket.emit('newGame', {id: $scope.gameId});
+            $scope.myTurn = $scope.turn && $scope.gameStarted && (playerOne && beginning || !beginning);
+            $scope.myGuess = $scope.guess && $scope.gameStarted && (playerOne && beginning || !beginning);
         }
 
         init();
         socket.on('gameJoined', function () {
             board.cell("each").rid();
-            gameStarted = true;
+            $scope.gameStarted = true;
             if (playerOne) {
+                $scope.myGuess = true;
                 $cordovaToast.showShortBottom("Your turn, make your guess");
             }
         });
@@ -109,6 +116,16 @@ angular.module('starter.controllers', [])
             $scope.modal.hide();
         };
 
+        $scope.popover = $ionicPopover.fromTemplateUrl('templates/iconHelp.html', {
+            scope: $scope
+        }).then(function(popover) {
+            $scope.popover = popover;
+        });;
+
+        $scope.showIconHelp = function ($event) {
+            $scope.popover.show($event);
+        };
+
         socket.on('gameInvite', function (gameInvite) {
             var confirmPopup = $ionicPopup.confirm({
                 title: 'Game Invite',
@@ -130,7 +147,7 @@ angular.module('starter.controllers', [])
                         // Inform other player about success
                         board.cell("each").rid();
                         playingGameId = gameInvite.gameId;
-                        gameStarted = true;
+                        $scope.gameStarted = true;
                         playerOne = false;
                         socket.emit('newGameJoined', {gameId: playingGameId});
                         $cordovaToast.showShortBottom("Opponent turn, wait for guess");
@@ -158,7 +175,7 @@ angular.module('starter.controllers', [])
                     // Inform other player about success
                     board.cell("each").rid();
                     playingGameId = $scope.id.friendGameId.toLowerCase();
-                    gameStarted = true;
+                    $scope.gameStarted = true;
                     playerOne = false;
                     socket.emit('newGameJoined', {gameId: playingGameId});
                     $cordovaToast.showShortBottom("Opponent turn, wait for guess");
@@ -175,25 +192,26 @@ angular.module('starter.controllers', [])
             board.cell("each").on("click", function () {
                 if (board.cell(this).get() === null) {
 
-                    if (gameStarted) {
+                    if ($scope.gameStarted) {
                         // Emit a event for this turn
                         if (beginning && playerOne) {
-                            turn = !turn;
+                            $scope.turn = !$scope.turn;
                         }
                         myPiece = playerOne ? x : o;
                         opponentPiece = !playerOne ? x : o;
 
                         myGuess = board.cell(this).where();
                         if ((beginning && playerOne) || (!beginning)) {
-                            if (turn) {
+                            if ($scope.turn) {
                                 board.cell("each").rid();
                                 board.cell(this).place(myPiece.clone());
                                 board.cell(opponentGuess).place(guessPiece.clone());
                                 points = computePoints(myGuess, opponentGuess);
                                 $cordovaToast.showShortBottom(points + " points to you, now make your guess");
                                 $scope.myScore = $scope.myScore + points;
-                                $scope.$apply();
-                                turn = !turn;
+                                $scope.turn = !$scope.turn;
+                                $scope.myTurn = false;
+                                $scope.myGuess = true;
 
                                 // Player one will decide when to finish the game, will send an event when game will finish
                                 turnCount = turnCount + 1;
@@ -205,14 +223,16 @@ angular.module('starter.controllers', [])
                                     socket.emit('newTurn', {gameId: playingGameId, location: myGuess});
                                 }
 
-                            } else if (guess) {
+                            } else if ($scope.guess) {
+                                $scope.myGuess = false;
                                 board.cell("each").rid();
                                 board.cell(this).place(guessPiece.clone());
-                                guess = !guess;
+                                $scope.guess = !$scope.guess;
                                 $cordovaToast.showShortBottom("Great!!!, now wait for opponent move and guess");
                                 socket.emit('turnTransfer', {gameId: playingGameId, location: myGuess});
                             }
                             beginning = false;
+                            $scope.$apply();
                         }
 
 
@@ -235,8 +255,9 @@ angular.module('starter.controllers', [])
             });
 
             socket.on('takeTurn', function (oppGuess) {
-                turn = true;
-                guess = true;
+                $scope.turn = true;
+                $scope.guess = true;
+                $scope.myTurn = true;
                 beginning = false;
                 opponentGuess = oppGuess;
                 $cordovaToast.showShortBottom("Your turn, make your move close to opponent guess");
@@ -348,6 +369,7 @@ angular.module('starter.controllers', [])
                                     $ionicLoading.hide();
                                     $state.go('gameOptions');
                                 } else {
+                                    $ionicLoading.hide();
                                     alert("Something went wrong, Please try again");
                                 }
 
@@ -360,10 +382,11 @@ angular.module('starter.controllers', [])
 
     })
 
-    .controller('GameOptionsCtrl', function ($scope, $ionicNavBarDelegate, $rootScope, $state) {
+    .controller('GameOptionsCtrl', function ($scope, $ionicNavBarDelegate, $rootScope, $state, ConfigConstant) {
         $ionicNavBarDelegate.showBackButton(false);
         $scope.setGameOption = function (option) {
             $rootScope.gameOption = option;
+            $rootScope.currentGame = ConfigConstant.gameType[option];
             $state.go('tab.game');
         }
 

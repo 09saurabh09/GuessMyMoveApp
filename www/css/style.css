@@ -33,3 +33,13 @@
 div.col:focus {
     background-color:red;
 }
+
+.grey-icon {
+    font-size: 30px;
+    color : grey;
+}
+
+.green-icon {
+    font-size: 30px;
+    color : green;
+}
